@@ -1,16 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import select
 import socket
+from parsing_and_output import parse
 
-SERVER_ADDRESS = ('localhost', 8687)
+SERVER_ADDRESS = ('localhost', 8686)
 MAX_CONN = 10
 
 INPUTS = list()
 OUTPUTS = list()
 
-def nb_socket():
+def nb_socket() -> classmethod:
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setblocking(0)
@@ -19,14 +17,13 @@ def nb_socket():
     server.listen(MAX_CONN)
     return server
 
-def handle_readables(readables, server):
+def handle_readables(readables, server) -> None:
     for resource in readables:
         # проверяем от сервера ли событие
         if resource is server:
             connection, client_addres = resource.accept()
             connection.setblocking(0)
             INPUTS.append(connection)
-            print(f'New connection from {client_addres}')
         else:
             data = ''
             try:
@@ -35,24 +32,20 @@ def handle_readables(readables, server):
                 pass
 
             if data:
-                print(f'data: {str(data)}')
+                parse(data)
                 if resource not in OUTPUTS:
                     OUTPUTS.append(resource)
             else:
                 clear_resource(resource)
 
-def clear_resource(resource):
-    # чистим ресурсы
+def clear_resource(resource) -> None:
     if resource in OUTPUTS:
         OUTPUTS.remove(resource)
     if resource in INPUTS:
         INPUTS.remove(resource)
-
     resource.close()
 
-    # print(f'connection closing {str(resource)}')
-
-def handle_writables(writables):
+def handle_writables(writables) -> None:
     for resource in writables:
         try:
             resource.send(bytes('Data accepted!\n', encoding='UTF-8'))
